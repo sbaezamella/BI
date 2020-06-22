@@ -19,7 +19,7 @@ def pre_proc():
 
     # Lectura de param_sae.csv
     param_sae = np.genfromtxt('param_sae.csv', delimiter=',')
-
+    
     # PARÁMETROS SAE.CS
     data_param_sae = {
         'percent_training': param_sae[0],
@@ -52,4 +52,4 @@ def pre_proc():
         'bp': data_param_bp
     }
 
-    return data_input, parametros
+    return data_input, data_label, parametros
