@@ -1,3 +1,11 @@
+"""
+Grupo 13:
+- Sebastián Baeza M
+- Andrés Guerrero H.
+- Jorge Pacheco M.
+- Juan Mansilla C. 
+"""
+
 import pandas as pd
 import numpy as np
 from pre_proc import *
@@ -27,81 +35,74 @@ def get_pre_data(type):
         return test_data_input, test_data_label
 
 
-def sigmoid(z):
+# SIGMOID
+def sigmoidal(z):
+    """The sigmoid function."""
     return 1.0/(1.0 + np.exp(-z))
 
 
 def softmax(z):
 
     N, nc = np.shape(z)
-
     z = np.array(z, dtype=float)
     y = z
     suma = 0
     for i in range(N):
         for j in range(nc):
             for k in range(nc):
-                suma = suma + np.exp(z[i][k])
+                suma += np.exp(z[i][k])
             y[i][j] = np.exp(z[i][j]) / suma
             suma = 0
 
     return y
 
 
-def actualizar_peso(T, Y, X, mu, lamd, w, N):
+def actualizar_peso(T, Y, X, mu, lamd, weight, N):
+
     mu = (mu)
     lamd = (lamd)
     X = np.transpose(X)
     resta = np.subtract(T, Y)
     resta = np.transpose(resta)
     mult = np.dot(resta, X)
-    gradiente = ((-1/N) * mult) + lamd*w
-    wnew = w-mu*(gradiente)
+    gradiente = ((-1/N) * mult) + lamd*weight
+    wnew = weight-mu*(gradiente)
+
     return wnew
 
 
-def train(parametros):
-    listaCosto = []
-
+def train_main(parametros):
+    """
+    Funcion que entrena la red
+    """
+    costos_array = []
     training_data_input, training_data_label = get_pre_data('train')
 
-    nh = [parametros['sae']['hidden_node_ae1'],
-          parametros['sae']['hidden_node_ae2']]
+    n_h = [parametros['sae']['hidden_node_ae1'],
+           parametros['sae']['hidden_node_ae2']]
 
     param_inv = parametros['sae']['param_pinv']
 
     lista = []
     for i in range(AUTOENCODER_NUM):
 
-        hidden_nodes = nh[i]
-
-        ni, N = training_data_input.shape
-
-        r = np.sqrt(6/(ni+hidden_nodes))
-        w = np.random.rand(int(hidden_nodes), int(ni)) * 2 * r - r
+        n_i = training_data_input.shape[0]
+        r_0 = 6 / (n_i + n_h[i])
+        r_i = np.sqrt(r_0)
+        weight = np.random.rand(int(n_h[i]), int(n_i)) * 2 * r_i - r_i
         x = training_data_input
-
-        b = np.random.rand(int(hidden_nodes), 1) * 2 * r - r
-
+        b = np.random.rand(int(n_h[i]), 1) * 2 * r_i - r_i
         x = np.array(x, dtype=float)
-        w = np.array(w, dtype=float)
+        weight = np.array(weight, dtype=float)
         b = np.array(b, dtype=float)
-        capa_salida = np.dot(w, x)+b
-
-        # ENCODER
-        H = capa_salida
-        H = sigmoid(H)
-
-        # PESOS DECODER
-        w_aux1 = np.dot(x, np.transpose(H))
-        w_aux2 = np.dot(H, np.transpose(H)) + (1/param_inv)
-        w_aux2 = np.linalg.inv(w_aux2)
-        w = np.dot(w_aux1, w_aux2)
-
-        training_data_input = w
-        w = pd.DataFrame(w)
-        lista.append(w)
-        # w.to_csv("deepl_pesos"+str(i+1)+".csv")
+        h = np.dot(weight, x) + b
+        h = sigmoidal(h)
+        weight = np.dot(np.dot(x, np.transpose(h)), np.linalg.inv(
+            np.dot(h, np.transpose(h)) + (1/param_inv)))
+        training_data_input = weight
+        weight = pd.DataFrame(weight)
+        lista.append(weight)
+        weight.to_csv(f"pesos{str(i+1)}.csv")
 
     x = lista[AUTOENCODER_NUM-1]
 
@@ -110,9 +111,10 @@ def train(parametros):
 
     training_data_label = np.array(training_data_label, dtype=float)
     nmuestras, nclases = training_data_label.shape
+
     r = np.sqrt(6/(nc+nclases))
-    w = np.random.rand(nclases, nc) * 2 * r - r
-    z = np.dot(w, x)
+    weight = np.random.rand(nclases, nc) * 2 * r - r
+    z = np.dot(weight, x)
     z = np.transpose(z)
     max_iteracion = parametros['softmax']['max_iteracion']
     tasa_aprendizaje = parametros['softmax']['tasa_aprendizaje']
@@ -121,10 +123,10 @@ def train(parametros):
     for i in range(int(max_iteracion)):
         print(f'Iteración numero: {i}')
         y = softmax(z)
-        w = actualizar_peso(training_data_label, y, x,
-                            tasa_aprendizaje, penalidad_pesos, w, N)
+        weight = actualizar_peso(
+            training_data_label, y, x, tasa_aprendizaje, penalidad_pesos, weight, N)
 
-        z = np.dot(w, x)
+        z = np.dot(weight, x)
         z = np.transpose(z)
 
         suma1 = 0
@@ -132,19 +134,19 @@ def train(parametros):
             for j in range(nclases):
                 suma1 = suma1 + (training_data_label[i][j] * np.log(y[i][j]))
 
-        wnorma = (np.linalg.norm(w))
+        wnorma = (np.linalg.norm(weight))
 
         costo = -(1/N) * suma1 + ((penalidad_pesos/2)*(wnorma))
         print(f'Costo: {costo}')
-        # listaCosto.append(costo)
+        costos_array.append(costo)
 
-        # with open("deepl_costo.csv", "w") as f:
-        #     wr = csv.writer(f, delimiter="\n")
-        #     wr.writerow(listaCosto)
+        with open("deepl_costo.csv", "weight") as f:
+            wr = csv.writer(f, delimiter="\n")
+            wr.writerow(costos_array)
         suma1 = 0
 
-    # y = pd.DataFrame(y)
-    # y.to_csv("predict.csv", index=False, header=None)
+    y = pd.DataFrame(y)
+    y.to_csv("resultado_prediccion.csv", index=False, header=None)
 
 
-train(parametros)
+train_main(parametros)

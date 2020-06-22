@@ -1,33 +1,53 @@
+"""
+Grupo 13:
+- Sebastián Baeza M
+- Andrés Guerrero H.
+- Jorge Pacheco M.
+- Juan Mansilla C. 
+"""
+
 import pandas as pd
 import numpy as np
 
 
 def pre_proc():
+    """
+    Funcion que retorna la data, las etiquetas y los parametros
+
+    output: data_input, vectores_label, parametros
+    """
+
+    # Lectura de datos desde data.csv
     data_df = pd.read_csv('data.csv', sep=',', header=None)
 
-    data_df = data_df.sample(frac=1).reset_index(drop=True)
+    # ******************************************
+    # ********** Reordenar **************
+    data_df_copy = data_df.sample(frac=1).reset_index(drop=True)
 
-    data_input = data_df.iloc[0:1600, 0:256]
+    L = len(data_df_copy.index)
+    D = len(data_df_copy.columns)
 
-    # Ultima columna (etiquetas) 
-    data_label = data_df.iloc[0:1600, 256]
+    # data_input= N filas por [D-1]columnas
+    data_input = data_df_copy.iloc[0:L, 0:D-1]
 
-    binarios = np.identity(10)
+    # Label, contiene la última columna (257-1)
+    data_label = data_df_copy.iloc[0:L, D-1]
 
-    aux = []
-    for i in data_label:
-        aux.append(binarios[i-1])
+    # Identidad binaria
+    matriz_identidad = np.identity(10)
 
-    aux = pd.DataFrame(aux)
+    # Reemplazo en Columna  256, de cada etiqueta numérica a etiqueta Binaria.
+    vectores_label = [matriz_identidad[i-1] for i in data_label]
 
-    aux.to_csv('data_label.csv', index=False)
+    vectores_label = pd.DataFrame(vectores_label)
 
-    vectores_label = pd.read_csv('data_label.csv') 
+    #    ********************************************
+    # ***************************************************
 
-
-
-    ### PARÁMETROS
-    ## SAE
+    # *********************************************************
+    # ********************************************************
+    # PARÁMETROS
+    # SAE
     param_sae = np.genfromtxt('param_sae.csv', delimiter=',')
     data_param_sae = {
         'percent_training': param_sae[0],
