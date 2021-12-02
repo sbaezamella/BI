@@ -6,9 +6,12 @@ Grupo 13:
 - Juan Mansilla C. 
 """
 
-import pandas as pd
+import csv
+
 import numpy as np
-from pre_proc import *
+import pandas as pd
+
+from utils import pre_proc
 
 data_input, data_label, parametros = pre_proc()
 
@@ -17,19 +20,18 @@ AUTOENCODER_NUM = 2
 
 
 def get_pre_data(type):
-    param_sae = parametros['sae']
+    param_sae = parametros["sae"]
 
-    porcentaje_train = param_sae['percent_training']
+    porcentaje_train = param_sae["percent_training"]
     rows_number = len(data_input.index)
-    train_number = int(np.round(porcentaje_train*rows_number))
-    testing_number = rows_number - train_number
+    train_number = int(np.round(porcentaje_train * rows_number))
 
-    if type == 'train':
+    if type == "train":
         training_data_input = data_input.iloc[0:train_number]
         training_data_label = data_label.iloc[0:train_number]
         return training_data_input, training_data_label
 
-    elif type == 'test':
+    elif type == "test":
         test_data_input = data_input.iloc[train_number:]
         test_data_label = data_label.iloc[train_number:]
         return test_data_input, test_data_label
@@ -38,11 +40,10 @@ def get_pre_data(type):
 # SIGMOID
 def sigmoidal(z):
     """The sigmoid function."""
-    return 1.0/(1.0 + np.exp(-z))
+    return 1.0 / (1.0 + np.exp(-z))
 
 
 def softmax(z):
-
     N, nc = np.shape(z)
     z = np.array(z, dtype=float)
     y = z
@@ -58,17 +59,12 @@ def softmax(z):
 
 
 def actualizar_peso(T, Y, X, mu, lamd, weight, N):
-
-    mu = (mu)
-    lamd = (lamd)
     X = np.transpose(X)
     resta = np.subtract(T, Y)
     resta = np.transpose(resta)
     mult = np.dot(resta, X)
-    gradiente = ((-1/N) * mult) + lamd*weight
-    wnew = weight-mu*(gradiente)
-
-    return wnew
+    gradiente = ((-1 / N) * mult) + lamd * weight
+    return weight - mu * (gradiente)
 
 
 def train_main(parametros):
@@ -76,12 +72,11 @@ def train_main(parametros):
     Funcion que entrena la red
     """
     costos_array = []
-    training_data_input, training_data_label = get_pre_data('train')
+    training_data_input, training_data_label = get_pre_data("train")
 
-    n_h = [parametros['sae']['hidden_node_ae1'],
-           parametros['sae']['hidden_node_ae2']]
+    n_h = [parametros["sae"]["hidden_node_ae1"], parametros["sae"]["hidden_node_ae2"]]
 
-    param_inv = parametros['sae']['param_pinv']
+    param_inv = parametros["sae"]["param_pinv"]
 
     lista = []
     for i in range(AUTOENCODER_NUM):
@@ -97,14 +92,16 @@ def train_main(parametros):
         b = np.array(b, dtype=float)
         h = np.dot(weight, x) + b
         h = sigmoidal(h)
-        weight = np.dot(np.dot(x, np.transpose(h)), np.linalg.inv(
-            np.dot(h, np.transpose(h)) + (1/param_inv)))
+        weight = np.dot(
+            np.dot(x, np.transpose(h)),
+            np.linalg.inv(np.dot(h, np.transpose(h)) + (1 / param_inv)),
+        )
         training_data_input = weight
         weight = pd.DataFrame(weight)
         lista.append(weight)
-        weight.to_csv(f"pesos{str(i+1)}.csv")
+        weight.to_csv(f"pesos{i + 1}.csv")
 
-    x = lista[AUTOENCODER_NUM-1]
+    x = lista[AUTOENCODER_NUM - 1]
 
     x = np.transpose(x)
     nc, N = x.shape
@@ -112,19 +109,20 @@ def train_main(parametros):
     training_data_label = np.array(training_data_label, dtype=float)
     nmuestras, nclases = training_data_label.shape
 
-    r = np.sqrt(6/(nc+nclases))
+    r = np.sqrt(6 / (nc + nclases))
     weight = np.random.rand(nclases, nc) * 2 * r - r
     z = np.dot(weight, x)
     z = np.transpose(z)
-    max_iteracion = parametros['softmax']['max_iteracion']
-    tasa_aprendizaje = parametros['softmax']['tasa_aprendizaje']
-    penalidad_pesos = parametros['softmax']['penalidad_pesos']
+    max_iteracion = parametros["softmax"]["max_iteracion"]
+    tasa_aprendizaje = parametros["softmax"]["tasa_aprendizaje"]
+    penalidad_pesos = parametros["softmax"]["penalidad_pesos"]
 
     for i in range(int(max_iteracion)):
-        print(f'Iteración numero: {i}')
+        print(f"Iteración numero: {i}")
         y = softmax(z)
         weight = actualizar_peso(
-            training_data_label, y, x, tasa_aprendizaje, penalidad_pesos, weight, N)
+            training_data_label, y, x, tasa_aprendizaje, penalidad_pesos, weight, N
+        )
 
         z = np.dot(weight, x)
         z = np.transpose(z)
@@ -132,12 +130,12 @@ def train_main(parametros):
         suma1 = 0
         for i in range(nmuestras):
             for j in range(nclases):
-                suma1 = suma1 + (training_data_label[i][j] * np.log(y[i][j]))
+                suma1 += training_data_label[i][j] * np.log(y[i][j])
 
-        wnorma = (np.linalg.norm(weight))
+        wnorma = np.linalg.norm(weight)
 
-        costo = -(1/N) * suma1 + ((penalidad_pesos/2)*(wnorma))
-        print(f'Costo: {costo}')
+        costo = -(1 / N) * suma1 + ((penalidad_pesos / 2) * (wnorma))
+        print(f"Costo: {costo}")
         costos_array.append(costo)
 
         with open("deepl_costo.csv", "weight") as f:

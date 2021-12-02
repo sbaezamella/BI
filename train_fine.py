@@ -6,9 +6,10 @@ Grupo 13:
 - Juan Mansilla C. 
 """
 
-import pandas as pd
 import numpy as np
-from pre_proc import *
+import pandas as pd
+
+from utils import pre_proc
 
 data_input, data_label, parametros = pre_proc()
 
@@ -17,19 +18,18 @@ AUTOENCODER_NUM = 2
 
 
 def get_pre_data(type):
-    param_sae = parametros['sae']
+    param_sae = parametros["sae"]
 
-    porcentaje_train = param_sae['percent_training']
+    porcentaje_train = param_sae["percent_training"]
     rows_number = len(data_input.index)
-    train_number = int(np.round(porcentaje_train*rows_number))
-    testing_number = rows_number - train_number
+    train_number = int(np.round(porcentaje_train * rows_number))
 
-    if type == 'train':
+    if type == "train":
         training_data_input = data_input.iloc[0:train_number]
         training_data_label = data_label.iloc[0:train_number]
         return training_data_input, training_data_label
 
-    elif type == 'test':
+    elif type == "test":
         test_data_input = data_input.iloc[train_number:]
         test_data_label = data_label.iloc[train_number:]
         return test_data_input, test_data_label
@@ -57,16 +57,16 @@ def train_fine(a1, ye, a2, a3, mu, max_iter):
 
 
 def sigmoid_derivate(x):
-    return x*(1-x)
+    return x * (1 - x)
 
 
-training_data_input, training_data_label = get_pre_data('train')
+training_data_input, training_data_label = get_pre_data("train")
 
 predict = pd.read_csv("resultado_prediccion.csv", header=None)
 predict = np.array(predict)
 
-max_iteracion = parametros['bp']['max_iteracion']
-tasa_aprendizaje = parametros['bp']['tasa_aprendizaje']
+max_iteracion = parametros["bp"]["max_iteracion"]
+tasa_aprendizaje = parametros["bp"]["tasa_aprendizaje"]
 
 listaAE = []
 
